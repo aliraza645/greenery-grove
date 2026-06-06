@@ -67,7 +67,6 @@ function Home() {
             <Link
               key={c.slug}
               to="/shop"
-              search={{ category: c.slug } as never}
               className="group cursor-pointer block"
             >
               <div className="aspect-[3/4] mb-4 overflow-hidden bg-stone-100">
