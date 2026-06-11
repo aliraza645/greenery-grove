@@ -1,6 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { createOrder } from "@/services/orders";
+import { isObjectId } from "@/services/cart";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/checkout")({
@@ -15,8 +18,10 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [method, setMethod] = useState<"stripe" | "cod">("stripe");
+  const [method, setMethod] = useState<"stripe" | "cod">("cod");
+  const [submitting, setSubmitting] = useState(false);
 
   const shipping = subtotal > 75 ? 0 : 8;
   const total = subtotal + shipping;
@@ -35,17 +40,59 @@ function CheckoutPage() {
       <h1 className="font-serif text-5xl text-leaf mb-12">Checkout</h1>
 
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          toast.success("Order placed! (demo — wire to your backend)");
-          clear();
-          navigate({ to: "/account" });
+          if (!user) {
+            toast.error("Please sign in to place an order.");
+            navigate({ to: "/auth/login" });
+            return;
+          }
+          const form = new FormData(e.currentTarget);
+          const payload = {
+            items: items.map((it) => ({
+              product: it.product.id,
+              name: it.product.name,
+              price: it.product.price,
+              quantity: it.qty,
+              image: it.product.image,
+            })),
+            shipping: {
+              fullName: `${form.get("first")} ${form.get("last")}`.trim(),
+              address: String(form.get("address") ?? ""),
+              city: String(form.get("city") ?? ""),
+              postalCode: String(form.get("zip") ?? ""),
+              country: String(form.get("country") ?? ""),
+              phone: "",
+            },
+            subtotal,
+            shippingCost: shipping,
+            discount: 0,
+            total,
+            paymentMethod: method,
+          };
+
+          const hasLocalIds = items.some((it) => !isObjectId(it.product.id));
+          setSubmitting(true);
+          try {
+            const order = await createOrder(payload);
+            toast.success(`Order ${order._id.slice(-6).toUpperCase()} placed`);
+            clear();
+            navigate({ to: "/account" });
+          } catch (err) {
+            const hint = hasLocalIds
+              ? " (Cart contains seed-data products without server IDs — shop from the live catalog to place a real order.)"
+              : "";
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            toast.error(((err as any)?.response?.data?.message ?? "Order failed") + hint);
+          } finally {
+            setSubmitting(false);
+          }
         }}
         className="grid lg:grid-cols-[1fr_400px] gap-12"
       >
         <div className="space-y-10">
           <Section title="Contact">
-            <Field label="Email" name="email" type="email" required />
+            <Field label="Email" name="email" type="email" defaultValue={user?.email ?? ""} required />
           </Section>
 
           <Section title="Shipping address">
@@ -64,8 +111,8 @@ function CheckoutPage() {
 
           <Section title="Payment method">
             <div className="space-y-3">
-              <PayOpt id="stripe" checked={method === "stripe"} onChange={() => setMethod("stripe")} title="Card payment via Stripe" sub="Secure card payment (demo only — not wired)" />
-              <PayOpt id="cod" checked={method === "cod"} onChange={() => setMethod("cod")} title="Cash on Delivery" sub="Pay in cash when your plant arrives" />
+              <PayOpt id="cod" checked={method === "cod"} onChange={() => setMethod("cod")} title="Cash on Delivery" sub="Pay in cash when your plant arrives." />
+              <PayOpt id="stripe" checked={method === "stripe"} onChange={() => setMethod("stripe")} title="Card payment via Stripe" sub="Secure card payment (not wired in phase 1)." />
             </div>
           </Section>
         </div>
@@ -89,8 +136,8 @@ function CheckoutPage() {
             <div className="flex justify-between"><dt className="text-ink/60">Shipping</dt><dd>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</dd></div>
             <div className="flex justify-between font-serif text-xl border-t border-leaf/10 pt-3 mt-2"><dt>Total</dt><dd className="text-leaf">${total.toFixed(2)}</dd></div>
           </dl>
-          <button className="mt-6 w-full bg-leaf text-mist py-4 text-xs uppercase tracking-widest font-medium hover:bg-leaf-soft transition-colors">
-            Place Order
+          <button disabled={submitting} className="mt-6 w-full bg-leaf text-mist py-4 text-xs uppercase tracking-widest font-medium hover:bg-leaf-soft transition-colors disabled:opacity-50">
+            {submitting ? "Placing order…" : "Place Order"}
           </button>
         </aside>
       </form>
