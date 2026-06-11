@@ -61,7 +61,12 @@ function OrdersAdmin() {
                     <StatusBadge status={o.status} />
                     <select
                       value={o.status}
-                      onChange={(e) => { setOrderStatus(o.id, e.target.value as Order["status"]); toast.success(`${o.id} → ${e.target.value}`); }}
+                      onChange={async (e) => {
+                        const next = e.target.value as Order["status"];
+                        try { await setOrderStatus(o.id, next); toast.success(`${o.id} → ${next}`); }
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        catch (err) { toast.error((err as any)?.response?.data?.message ?? "Update failed"); }
+                      }}
                       className="bg-mist border border-ink/15 px-2 py-1 text-xs"
                     >
                       {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
