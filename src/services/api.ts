@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// Wire to your Express/MongoDB backend by setting VITE_API_URL in .env
+// Set VITE_API_URL=http://localhost:5000/api in .env to target the Express backend.
 const baseURL = (import.meta.env.VITE_API_URL as string | undefined) ?? "/api";
 
 export const api = axios.create({
@@ -8,4 +8,22 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach JWT later: api.interceptors.request.use(cfg => { cfg.headers.Authorization = `Bearer ${token}`; return cfg; })
+const TOKEN_KEY = "eplant-auth";
+
+api.interceptors.request.use((cfg) => {
+  if (typeof window === "undefined") return cfg;
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (raw) {
+      const { token } = JSON.parse(raw);
+      if (token) cfg.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {}
+  return cfg;
+});
+
+export function apiErrorMessage(err: unknown, fallback = "Request failed") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const e = err as any;
+  return e?.response?.data?.message ?? e?.message ?? fallback;
+}

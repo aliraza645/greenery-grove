@@ -1,5 +1,14 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { products as seedProducts, type Product } from "@/data/products";
+import {
+  fetchProducts,
+  createProductApi,
+  updateProductApi,
+  deleteProductApi,
+} from "@/services/products";
+import { fetchAllOrders, setOrderStatusApi, type ServerOrder } from "@/services/orders";
+import { fetchUsers } from "@/services/users";
+import { useAuth } from "./AuthContext";
 
 export interface Order {
   id: string;
@@ -20,65 +29,106 @@ export interface Customer {
   joined: string;
 }
 
+function mapOrder(o: ServerOrder): Order {
+  const u = typeof o.user === "object" ? o.user : { name: "—", email: "" };
+  const status = o.status === "paid" ? "pending" : (o.status as Order["status"]);
+  return {
+    id: o._id,
+    customer: u.name ?? "—",
+    email: u.email ?? "",
+    total: o.total,
+    status,
+    date: o.createdAt?.slice(0, 10) ?? "",
+    items: o.items?.reduce((s, i) => s + i.quantity, 0) ?? 0,
+  };
+}
+
 const seedOrders: Order[] = [
   { id: "ORD-1042", customer: "Ava Lindgren", email: "ava@studio.com", total: 248, status: "shipped", date: "2026-06-05", items: 3 },
   { id: "ORD-1041", customer: "Noah Brooks", email: "noah@gmail.com", total: 85, status: "delivered", date: "2026-06-04", items: 1 },
   { id: "ORD-1040", customer: "Mira Okafor", email: "mira@studio.com", total: 412, status: "pending", date: "2026-06-04", items: 5 },
-  { id: "ORD-1039", customer: "Leo Tanaka", email: "leo@arch.io", total: 120, status: "delivered", date: "2026-06-03", items: 1 },
-  { id: "ORD-1038", customer: "Sofia Marín", email: "sofia@gmail.com", total: 76, status: "cancelled", date: "2026-06-02", items: 2 },
-  { id: "ORD-1037", customer: "Ezra Klein", email: "ezra@studio.com", total: 188, status: "delivered", date: "2026-06-01", items: 4 },
-  { id: "ORD-1036", customer: "Hana Park", email: "hana@design.co", total: 320, status: "shipped", date: "2026-05-30", items: 3 },
 ];
 
 const seedCustomers: Customer[] = [
   { id: "C-01", name: "Ava Lindgren", email: "ava@studio.com", orders: 6, spent: 1284, joined: "2025-09-12" },
   { id: "C-02", name: "Noah Brooks", email: "noah@gmail.com", orders: 2, spent: 173, joined: "2026-01-08" },
-  { id: "C-03", name: "Mira Okafor", email: "mira@studio.com", orders: 9, spent: 2410, joined: "2025-04-22" },
-  { id: "C-04", name: "Leo Tanaka", email: "leo@arch.io", orders: 3, spent: 360, joined: "2025-11-30" },
-  { id: "C-05", name: "Sofia Marín", email: "sofia@gmail.com", orders: 1, spent: 76, joined: "2026-05-19" },
 ];
 
 interface AdminCtx {
   products: Product[];
   orders: Order[];
   customers: Customer[];
-  createProduct: (p: Omit<Product, "id">) => void;
-  updateProduct: (id: string, patch: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  setOrderStatus: (id: string, status: Order["status"]) => void;
+  loading: boolean;
+  createProduct: (p: Omit<Product, "id">) => Promise<void>;
+  updateProduct: (id: string, patch: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  setOrderStatus: (id: string, status: Order["status"]) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const Ctx = createContext<AdminCtx | null>(null);
-const KEY = "eplant-admin-v1";
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
+  const { user, token } = useAuth();
   const [products, setProducts] = useState<Product[]>(seedProducts);
   const [orders, setOrders] = useState<Order[]>(seedOrders);
-  const [customers] = useState<Customer[]>(seedCustomers);
+  const [customers, setCustomers] = useState<Customer[]>(seedCustomers);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
+    setLoading(true);
     try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
-      if (raw) {
-        const s = JSON.parse(raw);
-        if (s.products) setProducts(s.products);
-        if (s.orders) setOrders(s.orders);
-      }
-    } catch {}
-  }, []);
+      // Products: always public
+      const prodPromise = fetchProducts().then(setProducts).catch(() => {});
+      // Orders + users: admin only
+      const adminPromises =
+        user?.role === "admin" && token
+          ? [
+              fetchAllOrders().then((list) => setOrders(list.map(mapOrder))).catch(() => {}),
+              fetchUsers()
+                .then((list) =>
+                  setCustomers(
+                    list.map((u) => ({
+                      id: u._id,
+                      name: u.name,
+                      email: u.email,
+                      orders: 0,
+                      spent: 0,
+                      joined: u.createdAt?.slice(0, 10) ?? "",
+                    }))
+                  )
+                )
+                .catch(() => {}),
+            ]
+          : [];
+      await Promise.all([prodPromise, ...adminPromises]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, token]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(KEY, JSON.stringify({ products, orders }));
-  }, [products, orders]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   const value = useMemo<AdminCtx>(() => ({
-    products, orders, customers,
-    createProduct: (p) => setProducts((arr) => [{ ...p, id: `p_${Date.now()}` }, ...arr]),
-    updateProduct: (id, patch) => setProducts((arr) => arr.map((x) => (x.id === id ? { ...x, ...patch } : x))),
-    deleteProduct: (id) => setProducts((arr) => arr.filter((x) => x.id !== id)),
-    setOrderStatus: (id, status) => setOrders((arr) => arr.map((o) => (o.id === id ? { ...o, status } : o))),
-  }), [products, orders, customers]);
+    products, orders, customers, loading,
+    createProduct: async (p) => {
+      const created = await createProductApi(p);
+      setProducts((arr) => [created, ...arr]);
+    },
+    updateProduct: async (id, patch) => {
+      const updated = await updateProductApi(id, patch);
+      setProducts((arr) => arr.map((x) => (x.id === id ? updated : x)));
+    },
+    deleteProduct: async (id) => {
+      await deleteProductApi(id);
+      setProducts((arr) => arr.filter((x) => x.id !== id));
+    },
+    setOrderStatus: async (id, status) => {
+      await setOrderStatusApi(id, status);
+      setOrders((arr) => arr.map((o) => (o.id === id ? { ...o, status } : o)));
+    },
+    refresh,
+  }), [products, orders, customers, loading, refresh]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

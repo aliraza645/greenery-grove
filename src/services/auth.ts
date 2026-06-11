@@ -1,25 +1,30 @@
-// import { api } from "./api";
+import { api } from "./api";
 
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  role?: "user" | "admin";
 }
 
-// TODO swap to: const { data } = await api.post("/auth/login", { email, password }); return data;
-export async function loginRequest(email: string, _password: string): Promise<{ user: AuthUser; token: string }> {
-  return Promise.resolve({
-    user: { id: "u_1", name: email.split("@")[0] || "Friend", email },
-    token: "mock-jwt-token",
-  });
+interface AuthResponse { user: AuthUser; token: string }
+
+export async function loginRequest(email: string, password: string): Promise<AuthResponse> {
+  const { data } = await api.post("/auth/login", { email, password });
+  return data;
 }
 
-// TODO swap to: api.post("/auth/register", ...)
-export async function registerRequest(name: string, email: string, _password: string) {
-  return Promise.resolve({ user: { id: "u_1", name, email }, token: "mock-jwt-token" });
+export async function registerRequest(name: string, email: string, password: string): Promise<AuthResponse> {
+  const { data } = await api.post("/auth/register", { name, email, password });
+  return data;
 }
 
-// TODO swap to: api.post("/auth/forgot-password", { email })
-export async function forgotPasswordRequest(_email: string) {
-  return Promise.resolve({ ok: true });
+export async function forgotPasswordRequest(email: string) {
+  const { data } = await api.post("/auth/forgot-password", { email });
+  return data;
+}
+
+export async function fetchMe(): Promise<AuthUser> {
+  const { data } = await api.get("/auth/me");
+  return data.user;
 }
