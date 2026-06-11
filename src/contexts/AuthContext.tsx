@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { AuthUser } from "@/services/auth";
+import { fetchMe, type AuthUser } from "@/services/auth";
 
 interface AuthCtx {
   user: AuthUser | null;
@@ -18,11 +18,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
-      if (raw) {
-        const s = JSON.parse(raw);
-        setUser(s.user);
-        setToken(s.token);
-      }
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      setUser(s.user);
+      setToken(s.token);
+      // Best-effort revalidate via /auth/me — silently clears on 401.
+      fetchMe()
+        .then((u) => setUser(u))
+        .catch(() => {
+          setUser(null); setToken(null);
+          if (typeof window !== "undefined") localStorage.removeItem(KEY);
+        });
     } catch {}
   }, []);
 

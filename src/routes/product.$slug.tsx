@@ -1,28 +1,21 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { Heart } from "lucide-react";
-import { getProduct, relatedTo } from "@/data/products";
 import { RatingStars } from "@/components/RatingStars";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { ProductCard } from "@/components/ProductCard";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
+import { useProduct, useProducts } from "@/hooks/useProducts";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/product/$slug")({
-  loader: ({ params }) => {
-    const product = getProduct(params.slug);
-    if (!product) throw notFound();
-    return { product };
-  },
+  loader: ({ params }) => ({ slug: params.slug }),
   head: ({ loaderData }) => ({
     meta: loaderData
       ? [
-          { title: `${loaderData.product.name} — ePlant` },
-          { name: "description", content: loaderData.product.description },
-          { property: "og:title", content: `${loaderData.product.name} — ePlant` },
-          { property: "og:description", content: loaderData.product.description },
-          { property: "og:image", content: loaderData.product.image },
+          { title: `${loaderData.slug} — ePlant` },
+          { name: "description", content: "Plant details." },
         ]
       : [],
   }),
@@ -36,13 +29,21 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { slug } = Route.useLoaderData();
+  const { product, loading } = useProduct(slug);
+  const { products: allProducts } = useProducts();
   const [qty, setQty] = useState(1);
   const [zoom, setZoom] = useState({ x: 50, y: 50, active: false });
   const { add } = useCart();
   const { has, toggle } = useWishlist();
+
+  if (loading && !product) {
+    return <div className="container mx-auto px-6 py-24 text-center text-ink/60">Loading…</div>;
+  }
+  if (!product) throw notFound();
+
   const wished = has(product.id);
-  const related = relatedTo(product.slug);
+  const related = allProducts.filter((p) => p.slug !== product.slug).slice(0, 3);
 
   return (
     <div className="bg-white">
@@ -54,7 +55,6 @@ function ProductPage() {
         </nav>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          {/* Image gallery with zoom */}
           <div>
             <div
               className="relative aspect-[4/5] bg-mist overflow-hidden cursor-zoom-in"
@@ -81,11 +81,10 @@ function ProductPage() {
             </div>
           </div>
 
-          {/* Details */}
           <div>
             <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-clay">{product.category}</span>
             <h1 className="font-serif text-4xl md:text-5xl text-leaf mt-3">{product.name}</h1>
-            <p className="italic text-ink/60 mt-1">{product.latin}</p>
+            {product.latin && <p className="italic text-ink/60 mt-1">{product.latin}</p>}
 
             <div className="mt-6 flex items-center gap-4">
               <p className="text-3xl text-leaf font-medium">${product.price}</p>
@@ -119,7 +118,6 @@ function ProductPage() {
           </div>
         </div>
 
-        {/* Related */}
         <section className="mt-24 border-t border-leaf/10 pt-16">
           <h2 className="font-serif text-3xl mb-10">You may also love</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">

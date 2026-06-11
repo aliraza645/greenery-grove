@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import heroImg from "@/assets/hero-monstera.jpg";
-import { bestSellers, categories } from "@/data/products";
+import { categories } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/")({
@@ -16,7 +17,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const featured = bestSellers();
+  const { products } = useProducts();
+  const featured = products.filter((p) => p.bestSeller).slice(0, 6);
+  const fallback = products.slice(0, 6);
+  const list = featured.length ? featured : fallback;
 
   return (
     <div>
@@ -90,7 +94,7 @@ function Home() {
             <Link to="/shop" className="text-clay font-medium underline underline-offset-8 text-sm">Browse all plants</Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
-            {featured.map((p) => <ProductCard key={p.id} product={p} />)}
+            {list.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
         </div>
       </section>

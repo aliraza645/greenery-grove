@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { products, type LightLevel, type PlantType } from "@/data/products";
+import type { LightLevel, PlantType } from "@/data/products";
 import { ProductCard } from "@/components/ProductCard";
+import { useProducts } from "@/hooks/useProducts";
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/shop")({
 type Sort = "latest" | "price-asc" | "price-desc" | "popular";
 
 function ShopPage() {
+  const { products, loading } = useProducts();
   const [query, setQuery] = useState("");
   const [type, setType] = useState<PlantType | "all">("all");
   const [light, setLight] = useState<LightLevel | "all">("all");
@@ -38,7 +40,7 @@ function ShopPage() {
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     if (sort === "popular") list = [...list].sort((a, b) => b.reviews - a.reviews);
     return list;
-  }, [query, type, light, inStockOnly, maxPrice, sort]);
+  }, [products, query, type, light, inStockOnly, maxPrice, sort]);
 
   return (
     <div className="bg-white">
@@ -47,7 +49,7 @@ function ShopPage() {
           <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-clay">Our Collection</span>
           <h1 className="font-serif text-5xl md:text-6xl mt-3 text-leaf">The Greenhouse</h1>
           <p className="mt-4 max-w-xl text-ink/70">
-            {filtered.length} living specimens, hand-picked from our growers.
+            {loading ? "Loading living specimens…" : `${filtered.length} living specimens, hand-picked from our growers.`}
           </p>
         </div>
       </header>

@@ -24,17 +24,22 @@ function ProductsAdmin() {
     [p.name, p.latin, p.category].join(" ").toLowerCase().includes(query.toLowerCase())
   );
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.name || !editing.slug) { toast.error("Name and slug are required"); return; }
-    if (editing.id) {
-      updateProduct(editing.id, editing);
-      toast.success("Product updated");
-    } else {
-      createProduct(editing);
-      toast.success("Product created");
+    try {
+      if (editing.id) {
+        await updateProduct(editing.id, editing);
+        toast.success("Product updated");
+      } else {
+        await createProduct(editing);
+        toast.success("Product created");
+      }
+      setEditing(null);
+    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      toast.error((e as any)?.response?.data?.message ?? "Save failed — is the API running?");
     }
-    setEditing(null);
   };
 
   return (
@@ -91,7 +96,12 @@ function ProductsAdmin() {
                 <td className="px-4 py-3 text-right">
                   <button onClick={() => setEditing(p)} className="p-2 text-ink/60 hover:text-leaf"><Pencil className="h-4 w-4" /></button>
                   <button
-                    onClick={() => { if (confirm(`Delete ${p.name}?`)) { deleteProduct(p.id); toast.success("Deleted"); } }}
+                    onClick={async () => {
+                      if (!confirm(`Delete ${p.name}?`)) return;
+                      try { await deleteProduct(p.id); toast.success("Deleted"); }
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      catch (e) { toast.error((e as any)?.response?.data?.message ?? "Delete failed"); }
+                    }}
                     className="p-2 text-ink/60 hover:text-red-600"
                   ><Trash2 className="h-4 w-4" /></button>
                 </td>
