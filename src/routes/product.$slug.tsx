@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { RatingStars } from "@/components/RatingStars";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductGallery } from "@/components/ProductGallery";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useProduct, useProducts } from "@/hooks/useProducts";
@@ -33,7 +34,6 @@ function ProductPage() {
   const { product, loading } = useProduct(slug);
   const { products: allProducts } = useProducts();
   const [qty, setQty] = useState(1);
-  const [zoom, setZoom] = useState({ x: 50, y: 50, active: false });
   const { add } = useCart();
   const { has, toggle } = useWishlist();
 
@@ -55,31 +55,10 @@ function ProductPage() {
         </nav>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          <div>
-            <div
-              className="relative aspect-[4/5] bg-mist overflow-hidden cursor-zoom-in"
-              onMouseEnter={() => setZoom((z) => ({ ...z, active: true }))}
-              onMouseLeave={() => setZoom((z) => ({ ...z, active: false }))}
-              onMouseMove={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                setZoom({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100, active: true });
-              }}
-            >
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-300"
-                style={zoom.active ? { transform: "scale(1.8)", transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-3 mt-4">
-              {[product.image, product.image, product.image, product.image].map((src, i) => (
-                <div key={i} className={`aspect-square bg-mist overflow-hidden ${i === 0 ? "ring-2 ring-leaf" : ""}`}>
-                  <img src={src} alt="" className="w-full h-full object-cover opacity-90" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <ProductGallery
+            images={product.images?.length ? product.images : [product.image]}
+            alt={product.name}
+          />
 
           <div>
             <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-clay">{product.category}</span>

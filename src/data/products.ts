@@ -18,7 +18,8 @@ export interface Product {
   name: string;
   latin: string;
   price: number;
-  image: string;
+  image: string; // cover — kept for back-compat (equals images[0] when present)
+  images: string[];
   category: string;
   type: PlantType;
   light: LightLevel;
@@ -47,42 +48,42 @@ export const categories: Category[] = [
 export const products: Product[] = [
   {
     id: "1", slug: "ficus-lyrata", name: "Fiddle Leaf Fig", latin: "Ficus Lyrata",
-    price: 85, image: fiddle, category: "indoor", type: "indoor", light: "indirect",
+    price: 85, image: fiddle, images: [fiddle], category: "indoor", type: "indoor", light: "indirect",
     inStock: true, bestSeller: true, rating: 4.8, reviews: 142,
     description: "The Fiddle Leaf Fig is the sculptural centerpiece every modern interior craves. Its violin-shaped, leathery leaves rise on a slender trunk to create instant architecture.",
     care: { water: "Once a week, when topsoil is dry.", light: "Bright, indirect sunlight.", temperature: "18–24°C." },
   },
   {
     id: "2", slug: "calathea-orbifolia", name: "Calathea Orbifolia", latin: "Prayer Plant",
-    price: 42, image: calathea, category: "indoor", type: "indoor", light: "low",
+    price: 42, image: calathea, images: [calathea], category: "indoor", type: "indoor", light: "low",
     inStock: true, rating: 4.6, reviews: 89,
     description: "Wide round leaves striped in silver and emerald. The Orbifolia folds her leaves upward at night, like hands in prayer.",
     care: { water: "Keep evenly moist, never soggy.", light: "Medium to low indirect light.", temperature: "18–27°C." },
   },
   {
     id: "3", slug: "strelitzia-nicolai", name: "Strelitzia Nicolai", latin: "Bird of Paradise",
-    price: 120, image: bird, category: "indoor", type: "indoor", light: "direct",
+    price: 120, image: bird, images: [bird], category: "indoor", type: "indoor", light: "direct",
     inStock: true, bestSeller: true, rating: 4.9, reviews: 211,
     description: "A statement floor plant with broad, paddle-shaped leaves that bring tropical drama into any sunlit corner.",
     care: { water: "Weekly in summer, less in winter.", light: "Bright, direct sun.", temperature: "18–30°C." },
   },
   {
     id: "4", slug: "calathea-rufibarba", name: "Velvet Calathea", latin: "Calathea Rufibarba",
-    price: 38, image: velvet, category: "indoor", type: "indoor", light: "indirect",
+    price: 38, image: velvet, images: [velvet], category: "indoor", type: "indoor", light: "indirect",
     inStock: true, rating: 4.5, reviews: 64,
     description: "Soft, ruby-undersided leaves with a velvet finish. A tactile, slightly moody houseplant.",
     care: { water: "Keep soil lightly moist.", light: "Bright, indirect light.", temperature: "16–24°C." },
   },
   {
     id: "5", slug: "zz-plant", name: "ZZ Plant", latin: "Zamioculcas Zamiifolia",
-    price: 48, image: zz, category: "indoor", type: "indoor", light: "low",
+    price: 48, image: zz, images: [zz], category: "indoor", type: "indoor", light: "low",
     inStock: true, bestSeller: true, rating: 4.9, reviews: 318,
     description: "Glossy, almost waxen leaves on architectural stems. Forgiving of neglect and low light.",
     care: { water: "Every 2–3 weeks. Allow to dry between.", light: "Any indoor light, even very low.", temperature: "15–24°C." },
   },
   {
     id: "6", slug: "pothos-golden", name: "Golden Pothos", latin: "Epipremnum Aureum",
-    price: 28, image: pothos, category: "indoor", type: "indoor", light: "low",
+    price: 28, image: pothos, images: [pothos], category: "indoor", type: "indoor", light: "low",
     inStock: true, rating: 4.7, reviews: 256,
     description: "Heart-shaped leaves on long, trailing vines. Happiest cascading from a shelf or hanging planter.",
     care: { water: "Weekly. Tolerates missed waterings.", light: "Low to medium indirect.", temperature: "15–27°C." },

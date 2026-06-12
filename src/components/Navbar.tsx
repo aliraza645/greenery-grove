@@ -27,9 +27,9 @@ export function Navbar() {
           </Link>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
-          <button aria-label="Search" className="p-2 text-ink/70 hover:text-leaf transition-colors">
+          <Link to="/shop" aria-label="Search the shop" className="p-2 text-ink/70 hover:text-leaf transition-colors">
             <Search className="size-4" />
-          </button>
+          </Link>
           <Link to="/account" aria-label="Account" className="relative p-2 text-ink/70 hover:text-leaf transition-colors">
             <Heart className="size-4" />
             {wish.length > 0 && (

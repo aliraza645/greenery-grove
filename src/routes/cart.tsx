@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { QuantityStepper } from "@/components/QuantityStepper";
@@ -17,11 +16,9 @@ export const Route = createFileRoute("/cart")({
 
 function CartPage() {
   const { items, subtotal, update, remove } = useCart();
-  const [coupon, setCoupon] = useState("");
-  const [discount, setDiscount] = useState(0);
 
   const shipping = subtotal > 75 || subtotal === 0 ? 0 : 8;
-  const total = Math.max(0, subtotal - discount) + shipping;
+  const total = subtotal + shipping;
 
   return (
     <div className="container mx-auto px-6 py-16">
@@ -70,31 +67,8 @@ function CartPage() {
           <aside className="bg-mist p-8 border border-leaf/10 h-fit">
             <h2 className="font-serif text-2xl mb-6">Order summary</h2>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (coupon.toUpperCase() === "GREEN15") {
-                  setDiscount(subtotal * 0.15);
-                  toast.success("Coupon applied — 15% off");
-                } else {
-                  setDiscount(0);
-                  toast.error("Invalid coupon");
-                }
-              }}
-              className="flex gap-2 mb-6"
-            >
-              <input
-                value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
-                placeholder="Coupon code"
-                className="flex-1 bg-white border border-leaf/15 px-3 py-2 text-sm outline-none focus:border-leaf"
-              />
-              <button className="bg-leaf text-mist px-4 py-2 text-xs uppercase tracking-widest">Apply</button>
-            </form>
-
             <dl className="space-y-3 text-sm border-t border-leaf/10 pt-6">
               <Row label="Subtotal" value={`$${subtotal.toFixed(2)}`} />
-              {discount > 0 && <Row label="Discount" value={`–$${discount.toFixed(2)}`} accent />}
               <Row label="Shipping" value={shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`} />
               <div className="border-t border-leaf/10 pt-3 mt-3 flex justify-between font-serif text-xl">
                 <span>Total</span><span className="text-leaf">${total.toFixed(2)}</span>
@@ -104,7 +78,6 @@ function CartPage() {
             <Link to="/checkout" className="mt-6 block text-center bg-leaf text-mist py-4 text-xs uppercase tracking-widest font-medium hover:bg-leaf-soft transition-colors">
               Proceed to Checkout
             </Link>
-            <p className="text-xs text-ink/50 mt-4 text-center">Try code <span className="font-mono text-leaf">GREEN15</span></p>
           </aside>
         </div>
       )}
@@ -112,11 +85,11 @@ function CartPage() {
   );
 }
 
-function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
       <dt className="text-ink/60">{label}</dt>
-      <dd className={accent ? "text-clay" : "text-ink"}>{value}</dd>
+      <dd className="text-ink">{value}</dd>
     </div>
   );
 }
