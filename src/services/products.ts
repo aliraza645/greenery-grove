@@ -13,13 +13,19 @@ const mapLight = (l?: string): LightLevel => {
 const mapType = (cat?: string): PlantType => (cat === "outdoor" ? "outdoor" : "indoor");
 
 export function mapProduct(p: ServerProduct): Product {
+  const images: string[] = Array.isArray(p.images)
+    ? p.images.filter(Boolean)
+    : p.image
+    ? [p.image]
+    : [];
   return {
     id: String(p._id ?? p.id),
     slug: p.slug,
     name: p.name,
     latin: p.latin ?? "",
     price: p.price ?? 0,
-    image: Array.isArray(p.images) ? p.images[0] ?? "" : p.image ?? "",
+    image: images[0] ?? "",
+    images,
     category: p.category ?? "indoor",
     type: mapType(p.category),
     light: mapLight(p.light),
@@ -35,13 +41,14 @@ export function mapProduct(p: ServerProduct): Product {
 /** Reverse: frontend draft -> server payload for POST/PUT. */
 export function toServerProduct(p: Partial<Product>) {
   const lightMap: Record<string, string> = { low: "low", indirect: "medium", direct: "direct" };
+  const images = (p.images && p.images.length ? p.images : p.image ? [p.image] : []).filter(Boolean);
   return {
     name: p.name,
     slug: p.slug,
     description: p.description,
     price: p.price,
     category: p.category,
-    images: p.image ? [p.image] : [],
+    images,
     stock: p.inStock ? 10 : 0,
     light: p.light ? lightMap[p.light] : "medium",
     featured: p.bestSeller ?? false,

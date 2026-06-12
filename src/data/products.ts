@@ -18,7 +18,8 @@ export interface Product {
   name: string;
   latin: string;
   price: number;
-  image: string;
+  image: string; // cover — kept for back-compat (equals images[0] when present)
+  images: string[];
   category: string;
   type: PlantType;
   light: LightLevel;
