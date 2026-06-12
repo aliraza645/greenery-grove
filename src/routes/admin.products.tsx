@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminData } from "@/contexts/AdminDataContext";
+import { CloudinaryUploader } from "@/components/CloudinaryUploader";
 import type { Product } from "@/data/products";
 
 export const Route = createFileRoute("/admin/products")({ component: ProductsAdmin });
@@ -10,7 +11,7 @@ export const Route = createFileRoute("/admin/products")({ component: ProductsAdm
 type Draft = Omit<Product, "id"> & { id?: string };
 
 const empty: Draft = {
-  slug: "", name: "", latin: "", price: 0, image: "", category: "indoor",
+  slug: "", name: "", latin: "", price: 0, image: "", images: [], category: "indoor",
   type: "indoor", light: "indirect", inStock: true, rating: 4.5, reviews: 0,
   description: "", care: { water: "", light: "", temperature: "" },
 };
@@ -146,7 +147,12 @@ function ProductsAdmin() {
                   <option value="y">Yes</option><option value="n">No</option>
                 </select>
               </Field>
-              <Field label="Image URL" full><input className={inp} value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} /></Field>
+              <Field label="Images" full>
+                <CloudinaryUploader
+                  images={editing.images ?? []}
+                  onChange={(imgs) => setEditing({ ...editing, images: imgs, image: imgs[0] ?? "" })}
+                />
+              </Field>
               <Field label="Description" full><textarea rows={3} className={inp} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></Field>
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-ink/10">
