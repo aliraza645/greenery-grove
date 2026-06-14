@@ -105,16 +105,59 @@ function OrdersTab() {
   );
 }
 
-function ProfileTab({ name, email }: { name: string; email: string }) {
+function ProfileTab() {
+  const { user, setSession, token } = useAuth();
+  const [name, setName] = useState(user?.name ?? "");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  if (!user) return null;
+
   return (
-    <div className="max-w-md">
+    <form
+      className="max-w-md"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!name.trim() || name.trim() === user.name) return;
+        setSaving(true);
+        setMsg(null);
+        try {
+          const updated = await updateMyProfile({ name: name.trim() });
+          if (token) setSession({ id: updated.id, name: updated.name, email: updated.email, role: updated.role }, token);
+          setMsg("Profile updated.");
+        } catch (err) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          setMsg((err as any)?.response?.data?.message ?? "Update failed");
+        } finally {
+          setSaving(false);
+        }
+      }}
+    >
       <h2 className="font-serif text-2xl mb-6">Profile</h2>
       <div className="space-y-4">
-        <Field label="Name" defaultValue={name} />
-        <Field label="Email" defaultValue={email} />
-        <button className="bg-leaf text-mist px-6 py-3 text-xs uppercase tracking-widest">Save changes</button>
+        <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <div>
+          <label className="block">
+            <span className="text-xs uppercase tracking-widest text-ink/60 block mb-2">Email (not editable)</span>
+            <input
+              value={user.email}
+              readOnly
+              disabled
+              className="w-full bg-mist/60 border border-leaf/10 px-4 py-3 text-sm text-ink/60 cursor-not-allowed"
+            />
+          </label>
+          <p className="text-xs text-ink/50 mt-1">Email cannot be changed. Contact support if you need to update it.</p>
+        </div>
+        <button
+          type="submit"
+          disabled={saving || !name.trim() || name.trim() === user.name}
+          className="bg-leaf text-mist px-6 py-3 text-xs uppercase tracking-widest disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+        {msg && <p className="text-sm text-ink/70">{msg}</p>}
       </div>
-    </div>
+    </form>
   );
 }
 
