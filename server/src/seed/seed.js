@@ -22,7 +22,7 @@ async function run() {
 
   const admin = await User.create({
     name: "Admin",
-    email: "admin@eplant.dev",
+    email: "admin@gmail.com",
     password: "admin123",
     role: "admin",
   });

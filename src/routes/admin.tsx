@@ -1,11 +1,20 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Package, ShoppingBag, Users, ArrowLeft } from "lucide-react";
 import { AdminDataProvider } from "@/contexts/AdminDataContext";
+import { AdminAuthGate } from "@/components/AdminAuthGate";
 
 export const Route = createFileRoute("/admin")({
-  component: AdminLayout,
+  component: AdminRoute,
   head: () => ({ meta: [{ title: "Admin — ePlant" }, { name: "robots", content: "noindex" }] }),
 });
+
+function AdminRoute() {
+  return (
+    <AdminAuthGate>
+      <AdminLayout />
+    </AdminAuthGate>
+  );
+}
 
 const nav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -56,7 +65,7 @@ function AdminLayout() {
             <div className="hidden md:block text-xs uppercase tracking-[0.2em] text-ink/50">
               Greenhouse Admin
             </div>
-            <div className="text-xs text-ink/60">admin@eplant.co</div>
+            <div className="text-xs text-ink/60">admin@gmail.com</div>
           </header>
           <main className="flex-1 overflow-auto p-6 md:p-10">
             <Outlet />
