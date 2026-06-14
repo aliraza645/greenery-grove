@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { ProductCard } from "@/components/ProductCard";
 import { fetchMyOrders, type ServerOrder } from "@/services/orders";
+import { updateMyProfile } from "@/services/users";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
