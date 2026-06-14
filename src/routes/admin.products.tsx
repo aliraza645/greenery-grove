@@ -138,11 +138,11 @@ function ProductsAdmin() {
               <button onClick={() => setEditing(null)} className="text-ink/50 hover:text-ink"><X className="h-5 w-5" /></button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
-              <Field label="Name"><input className={inp} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></Field>
-              <Field label="Slug"><input className={inp} value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} /></Field>
+              <Field label="Name" error={fieldErrors.name}><input className={inp} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></Field>
+              <Field label="Slug" error={fieldErrors.slug}><input className={inp} value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} /></Field>
               <Field label="Latin name"><input className={inp} value={editing.latin} onChange={(e) => setEditing({ ...editing, latin: e.target.value })} /></Field>
-              <Field label="Price ($)"><input type="number" className={inp} value={editing.price} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} /></Field>
-              <Field label="Category">
+              <Field label="Price ($)" error={fieldErrors.price}><input type="number" min={0} step="0.01" className={inp} value={editing.price} onChange={(e) => setEditing({ ...editing, price: Math.max(0, Number(e.target.value)) })} /></Field>
+              <Field label="Category" error={fieldErrors.category}>
                 <select className={inp} value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })}>
                   <option value="indoor">indoor</option><option value="pots">pots</option><option value="tools">tools</option><option value="succulents">succulents</option>
                 </select>
@@ -162,16 +162,16 @@ function ProductsAdmin() {
                   <option value="y">Yes</option><option value="n">No</option>
                 </select>
               </Field>
-              <Field label="Images" full>
+              <Field label="Images" full error={fieldErrors.images}>
                 <CloudinaryUploader
                   images={editing.images ?? []}
                   onChange={(imgs) => setEditing({ ...editing, images: imgs, image: imgs[0] ?? "" })}
                 />
               </Field>
-              <Field label="Description" full><textarea rows={3} className={inp} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></Field>
+              <Field label="Description" full error={fieldErrors.description}><textarea rows={3} className={inp} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></Field>
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-ink/10">
-              <button onClick={() => setEditing(null)} className="px-5 py-2.5 text-xs uppercase tracking-widest border border-ink/20">Cancel</button>
+              <button onClick={() => { setEditing(null); setFieldErrors({}); }} className="px-5 py-2.5 text-xs uppercase tracking-widest border border-ink/20">Cancel</button>
               <button onClick={save} className="px-5 py-2.5 text-xs uppercase tracking-widest bg-leaf text-mist">Save</button>
             </div>
           </div>
@@ -182,11 +182,12 @@ function ProductsAdmin() {
 }
 
 const inp = "w-full bg-mist border border-ink/15 px-3 py-2 text-sm";
-function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
+function Field({ label, children, full, error }: { label: string; children: React.ReactNode; full?: boolean; error?: string }) {
   return (
     <label className={`block ${full ? "col-span-2" : ""}`}>
       <span className="text-[10px] uppercase tracking-widest text-ink/50">{label}</span>
       <div className="mt-1">{children}</div>
+      {error && <span className="text-xs text-red-600 mt-1 block">{error}</span>}
     </label>
   );
 }
