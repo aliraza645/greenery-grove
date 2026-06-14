@@ -126,6 +126,7 @@ function RootComponent() {
               <Footer />
             </div>
             <Toaster richColors position="top-center" />
+            <ChatWidget />
           </CartProvider>
         </WishlistProvider>
       </AuthProvider>
