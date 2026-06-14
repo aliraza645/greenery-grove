@@ -167,10 +167,10 @@ function Field({ label, ...props }: { label: string } & React.InputHTMLAttribute
   );
 }
 
-function PayOpt({ id, checked, onChange, title, sub }: { id: string; checked: boolean; onChange: () => void; title: string; sub: string }) {
+function PayOpt({ id, checked, onChange, title, sub }: { id: string; checked: boolean; onChange?: () => void; title: string; sub: string }) {
   return (
     <label htmlFor={id} className={`flex gap-4 p-4 border cursor-pointer ${checked ? "border-leaf bg-leaf/5" : "border-leaf/15"}`}>
-      <input id={id} type="radio" name="method" checked={checked} onChange={onChange} className="accent-leaf mt-1" />
+      <input id={id} type="radio" name="method" checked={checked} onChange={onChange ?? (() => {})} className="accent-leaf mt-1" />
       <div>
         <p className="font-medium">{title}</p>
         <p className="text-xs text-ink/60 mt-1">{sub}</p>
