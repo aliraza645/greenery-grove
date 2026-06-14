@@ -61,7 +61,7 @@ function AccountPage() {
                   {wish.map((p) => <ProductCard key={p.id} product={p} />)}
                 </div>
           )}
-          {tab === "Profile" && <ProfileTab name={user.name} email={user.email} />}
+          {tab === "Profile" && <ProfileTab />}
           {tab === "Addresses" && <AddressesTab />}
         </div>
       </div>
