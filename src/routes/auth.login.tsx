@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { loginRequest } from "@/services/auth";
+import { apiErrorMessage } from "@/services/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/login")({
@@ -17,24 +18,36 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <AuthShell title="Welcome back" sub="Sign in to your greenhouse account.">
       <form
+        noValidate
         onSubmit={async (e) => {
           e.preventDefault();
+          setError(null);
+          if (!email.trim() || !pw) {
+            setError("Email and password are required.");
+            return;
+          }
           setLoading(true);
           try {
-            const { user, token } = await loginRequest(email, pw);
+            const { user, token } = await loginRequest(email.trim().toLowerCase(), pw);
             setSession(user, token);
             toast.success(`Welcome back, ${user.name}`);
             navigate({ to: "/account" });
+          } catch (e2) {
+            const msg = apiErrorMessage(e2, "Sign in failed");
+            setError(msg);
+            toast.error(msg);
           } finally { setLoading(false); }
         }}
         className="space-y-4"
       >
         <AuthField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <AuthField label="Password" type="password" value={pw} onChange={(e) => setPw(e.target.value)} required />
+        {error && <p className="text-xs text-red-600">{error}</p>}
         <div className="text-right">
           <Link to="/auth/forgot-password" className="text-xs text-clay hover:underline">Forgot password?</Link>
         </div>

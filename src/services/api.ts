@@ -25,5 +25,10 @@ api.interceptors.request.use((cfg) => {
 export function apiErrorMessage(err: unknown, fallback = "Request failed") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const e = err as any;
-  return e?.response?.data?.message ?? e?.message ?? fallback;
+  const data = e?.response?.data;
+  if (data?.errors && typeof data.errors === "object") {
+    const first = Object.values(data.errors)[0];
+    if (typeof first === "string") return `${data.message ? data.message + ": " : ""}${first}`;
+  }
+  return data?.message ?? e?.message ?? fallback;
 }
