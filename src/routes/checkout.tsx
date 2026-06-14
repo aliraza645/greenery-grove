@@ -113,8 +113,7 @@ function CheckoutPage() {
 
           <Section title="Payment method">
             <div className="space-y-3">
-              <PayOpt id="cod" checked={method === "cod"} onChange={() => setMethod("cod")} title="Cash on Delivery" sub="Pay in cash when your plant arrives." />
-              <PayOpt id="stripe" checked={method === "stripe"} onChange={() => setMethod("stripe")} title="Card payment via Stripe" sub="Secure card payment (not wired in phase 1)." />
+              <PayOpt id="cod" checked title="Cash on Delivery" sub="Pay in cash when your plant arrives. No card payment required." />
             </div>
           </Section>
         </div>
