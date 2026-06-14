@@ -17,6 +17,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import { ChatWidget } from "@/components/ChatWidget";
 
 function NotFoundComponent() {
   return (
@@ -125,6 +126,7 @@ function RootComponent() {
               <Footer />
             </div>
             <Toaster richColors position="top-center" />
+            <ChatWidget />
           </CartProvider>
         </WishlistProvider>
       </AuthProvider>

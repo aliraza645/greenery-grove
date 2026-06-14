@@ -20,7 +20,7 @@ function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [method, setMethod] = useState<"stripe" | "cod">("cod");
+  const method = "cod" as const;
   const [submitting, setSubmitting] = useState(false);
 
   const shipping = subtotal > 75 ? 0 : 8;
@@ -111,8 +111,7 @@ function CheckoutPage() {
 
           <Section title="Payment method">
             <div className="space-y-3">
-              <PayOpt id="cod" checked={method === "cod"} onChange={() => setMethod("cod")} title="Cash on Delivery" sub="Pay in cash when your plant arrives." />
-              <PayOpt id="stripe" checked={method === "stripe"} onChange={() => setMethod("stripe")} title="Card payment via Stripe" sub="Secure card payment (not wired in phase 1)." />
+              <PayOpt id="cod" checked title="Cash on Delivery" sub="Pay in cash when your plant arrives. No card payment required." />
             </div>
           </Section>
         </div>
@@ -166,10 +165,10 @@ function Field({ label, ...props }: { label: string } & React.InputHTMLAttribute
   );
 }
 
-function PayOpt({ id, checked, onChange, title, sub }: { id: string; checked: boolean; onChange: () => void; title: string; sub: string }) {
+function PayOpt({ id, checked, onChange, title, sub }: { id: string; checked: boolean; onChange?: () => void; title: string; sub: string }) {
   return (
     <label htmlFor={id} className={`flex gap-4 p-4 border cursor-pointer ${checked ? "border-leaf bg-leaf/5" : "border-leaf/15"}`}>
-      <input id={id} type="radio" name="method" checked={checked} onChange={onChange} className="accent-leaf mt-1" />
+      <input id={id} type="radio" name="method" checked={checked} onChange={onChange ?? (() => {})} className="accent-leaf mt-1" />
       <div>
         <p className="font-medium">{title}</p>
         <p className="text-xs text-ink/60 mt-1">{sub}</p>
