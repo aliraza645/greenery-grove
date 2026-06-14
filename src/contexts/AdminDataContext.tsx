@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { products as seedProducts, type Product } from "@/data/products";
+import type { Product } from "@/data/products";
 import {
   fetchProducts,
   createProductApi,
@@ -15,7 +15,7 @@ export interface Order {
   customer: string;
   email: string;
   total: number;
-  status: "pending" | "shipped" | "delivered" | "cancelled";
+  status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
   date: string;
   items: number;
 }
@@ -30,12 +30,17 @@ export interface Customer {
 }
 
 function mapOrder(o: ServerOrder): Order {
-  const u = typeof o.user === "object" ? o.user : { name: "—", email: "" };
-  const status = o.status === "paid" ? "pending" : (o.status as Order["status"]);
+  // typeof null === "object" in JS — must guard explicitly
+  const u = (o.user !== null && typeof o.user === "object") ? o.user : null;
+  // keep all statuses as-is; only coerce unknown values to "pending"
+  const validStatuses = ["pending", "paid", "shipped", "delivered", "cancelled"] as const;
+  const status = validStatuses.includes(o.status as typeof validStatuses[number])
+    ? (o.status as Order["status"])
+    : "pending";
   return {
     id: o._id,
-    customer: u.name ?? "—",
-    email: u.email ?? "",
+    customer: u?.name ?? "—",
+    email: u?.email ?? "",
     total: o.total,
     status,
     date: o.createdAt?.slice(0, 10) ?? "",
@@ -43,16 +48,6 @@ function mapOrder(o: ServerOrder): Order {
   };
 }
 
-const seedOrders: Order[] = [
-  { id: "ORD-1042", customer: "Ava Lindgren", email: "ava@studio.com", total: 248, status: "shipped", date: "2026-06-05", items: 3 },
-  { id: "ORD-1041", customer: "Noah Brooks", email: "noah@gmail.com", total: 85, status: "delivered", date: "2026-06-04", items: 1 },
-  { id: "ORD-1040", customer: "Mira Okafor", email: "mira@studio.com", total: 412, status: "pending", date: "2026-06-04", items: 5 },
-];
-
-const seedCustomers: Customer[] = [
-  { id: "C-01", name: "Ava Lindgren", email: "ava@studio.com", orders: 6, spent: 1284, joined: "2025-09-12" },
-  { id: "C-02", name: "Noah Brooks", email: "noah@gmail.com", orders: 2, spent: 173, joined: "2026-01-08" },
-];
 
 interface AdminCtx {
   products: Product[];
@@ -70,41 +65,47 @@ const Ctx = createContext<AdminCtx | null>(null);
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
   const { user, token } = useAuth();
-  const [products, setProducts] = useState<Product[]>(seedProducts);
-  const [orders, setOrders] = useState<Order[]>(seedOrders);
-  const [customers, setCustomers] = useState<Customer[]>(seedCustomers);
-  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      // Products: always public
-      const prodPromise = fetchProducts().then(setProducts).catch(() => {});
-      // Orders + users: admin only
-      const adminPromises =
-        user?.role === "admin" && token
-          ? [
-              fetchAllOrders().then((list) => setOrders(list.map(mapOrder))).catch(() => {}),
-              fetchUsers()
-                .then((list) =>
-                  setCustomers(
-                    list.map((u) => ({
-                      id: u._id,
-                      name: u.name,
-                      email: u.email,
-                      orders: 0,
-                      spent: 0,
-                      joined: u.createdAt?.slice(0, 10) ?? "",
-                    }))
-                  )
+      // Products are public — always fetch
+      const prodPromise = fetchProducts()
+        .then(setProducts)
+        .catch((e) => console.error("[AdminData] fetchProducts failed:", e));
+
+      // Orders + customers require a valid admin JWT — skip if not yet authenticated
+      const adminPromises = user?.role === "admin" && token
+        ? [
+            fetchAllOrders()
+              .then((list) => setOrders(list.map(mapOrder)))
+              .catch((e) => console.error("[AdminData] fetchAllOrders failed:", e)),
+            fetchUsers()
+              .then((list) =>
+                setCustomers(
+                  list.map((u) => ({
+                    id: u._id,
+                    name: u.name,
+                    email: u.email,
+                    orders: 0,
+                    spent: 0,
+                    joined: u.createdAt?.slice(0, 10) ?? "",
+                  }))
                 )
-                .catch(() => {}),
-            ]
-          : [];
+              )
+              .catch((e) => console.error("[AdminData] fetchUsers failed:", e)),
+          ]
+        : [];
+
       await Promise.all([prodPromise, ...adminPromises]);
     } finally {
       setLoading(false);
     }
+  // Re-run whenever auth state changes (login sets token, logout clears it)
   }, [user, token]);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -124,8 +125,9 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       setProducts((arr) => arr.filter((x) => x.id !== id));
     },
     setOrderStatus: async (id, status) => {
-      await setOrderStatusApi(id, status);
-      setOrders((arr) => arr.map((o) => (o.id === id ? { ...o, status } : o)));
+      const updated = await setOrderStatusApi(id, status);
+      // Use the server-returned order to ensure state stays in sync
+      setOrders((arr) => arr.map((o) => (o.id === id ? mapOrder(updated) : o)));
     },
     refresh,
   }), [products, orders, customers, loading, refresh]);

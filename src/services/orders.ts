@@ -2,7 +2,7 @@ import { api } from "./api";
 
 export interface ServerOrder {
   _id: string;
-  user: string | { _id: string; name: string; email: string };
+  user: string | { _id: string; name?: string; email?: string };
   items: { product: string; name?: string; price: number; quantity: number; image?: string }[];
   shipping?: Record<string, string>;
   subtotal: number;

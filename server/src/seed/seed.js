@@ -3,32 +3,50 @@ import mongoose from "mongoose";
 import { connectDB } from "../config/db.js";
 import User from "../models/User.js";
 import Product from "../models/Product.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const products = [
-  { name: "Monstera Deliciosa", price: 65, category: "indoor", stock: 12, light: "bright", careLevel: "easy", featured: true, images: ["/p-monstera.jpg"], description: "Iconic split-leaf statement plant." },
-  { name: "Fiddle Leaf Fig", price: 120, category: "indoor", stock: 6, light: "bright", careLevel: "medium", featured: true, images: ["/p-fiddle.jpg"], description: "Sculptural floor plant with broad leaves." },
-  { name: "Snake Plant", price: 38, category: "indoor", stock: 30, light: "low", careLevel: "easy", petSafe: false, images: ["/p-snake.jpg"], description: "Near-indestructible architectural plant." },
-  { name: "Pothos Golden", price: 22, category: "indoor", stock: 45, light: "medium", careLevel: "easy", images: ["/p-pothos.jpg"], description: "Trailing vine, perfect for shelves." },
-  { name: "Calathea Orbifolia", price: 48, category: "indoor", stock: 14, light: "medium", careLevel: "medium", petSafe: true, images: ["/p-calathea.jpg"], description: "Striped, pet-safe statement leaves." },
-  { name: "ZZ Plant", price: 42, category: "indoor", stock: 22, light: "low", careLevel: "easy", images: ["/p-zz.jpg"], description: "Drought-tolerant low-light hero." },
-  { name: "Bird of Paradise", price: 145, category: "indoor", stock: 4, light: "direct", careLevel: "medium", images: ["/p-bird.jpg"], description: "Tropical, paddle-leaf floor plant." },
-  { name: "Terracotta Pot 8\"", price: 18, category: "pots", stock: 60, images: ["/cat-pots.jpg"], description: "Classic glazed terracotta planter." },
-  { name: "Pruning Shears", price: 24, category: "tools", stock: 35, images: ["/cat-tools.jpg"], description: "Precision-cut stainless steel shears." },
-];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function loadProducts() {
+  const p = JSON.parse(fs.readFileSync(path.join(__dirname, "products.json"), "utf8"));
+  // ensure required fields and defaults match Product schema
+  return p.map((prod) => ({
+    name: prod.name,
+    price: prod.price ?? 0,
+    category: prod.category ?? "indoor",
+    stock: prod.stock ?? 0,
+    images: Array.isArray(prod.images) && prod.images.length ? prod.images : [prod.image ?? "/placeholder.jpg"],
+    light: prod.light ?? "medium",
+    careLevel: prod.careLevel ?? "easy",
+    petSafe: prod.petSafe ?? false,
+    description: prod.description ?? "",
+    rating: prod.rating ?? 0,
+    numReviews: prod.numReviews ?? prod.reviews ?? 0,
+    featured: prod.featured ?? prod.bestSeller ?? false,
+  }));
+}
 
 async function run() {
   await connectDB();
+  console.log("Clearing existing data...");
   await Promise.all([User.deleteMany({}), Product.deleteMany({})]);
 
-  const admin = await User.create({
-    name: "Admin",
-    email: "admin@gmail.com",
-    password: "admin123",
-    role: "admin",
-  });
-  await Product.insertMany(products);
+  console.log("Creating users...");
+  const admin = await User.create({ name: "Admin", email: "admin@gmail.com", password: "admin123", role: "admin" });
+  const user = await User.create({ name: "Demo User", email: "user@example.com", password: "password123" });
 
-  console.log(`Seeded ${products.length} products. Admin: ${admin.email} / admin123`);
+  console.log("Loading products from products.json...");
+  const products = loadProducts();
+
+  const inserted = await Product.insertMany(products);
+
+  console.log(`Inserted ${inserted.length} products.`);
+  console.log(`Admin created: ${admin.email} / admin123`);
+  console.log(`Demo user created: ${user.email} / password123`);
+
   await mongoose.disconnect();
 }
 

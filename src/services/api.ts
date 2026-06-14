@@ -22,6 +22,21 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+// Auto-logout on 401 — clears stale/expired session and redirects to login
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem(TOKEN_KEY);
+      if (!window.location.pathname.startsWith("/auth") &&
+          !window.location.pathname.startsWith("/admin")) {
+        window.location.href = "/auth/login";
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
 export function apiErrorMessage(err: unknown, fallback = "Request failed") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const e = err as any;

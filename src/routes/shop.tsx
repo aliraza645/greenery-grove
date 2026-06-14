@@ -24,13 +24,13 @@ function ShopPage() {
   const [type, setType] = useState<PlantType | "all">("all");
   const [light, setLight] = useState<LightLevel | "all">("all");
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [maxPrice, setMaxPrice] = useState(150);
+  const [maxPrice, setMaxPrice] = useState(5000);
   const [sort, setSort] = useState<Sort>("latest");
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => {
-      if (query && !`${p.name} ${p.latin}`.toLowerCase().includes(query.toLowerCase())) return false;
-      if (type !== "all" && p.type !== type) return false;
+      if (query && !`${p.name} ${p.latin ?? ""}`.toLowerCase().includes(query.toLowerCase())) return false;
+      if (type !== "all" && (p.type ?? (p.category === "outdoor" ? "outdoor" : "indoor")) !== type) return false;
       if (light !== "all" && p.light !== light) return false;
       if (inStockOnly && !p.inStock) return false;
       if (p.price > maxPrice) return false;
@@ -83,7 +83,7 @@ function ShopPage() {
               <input
                 type="range"
                 min={20}
-                max={200}
+                max={500}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-leaf"

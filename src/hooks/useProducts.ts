@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { fetchProduct, fetchProducts } from "@/services/products";
-import { products as seed, type Product } from "@/data/products";
+import type { Product } from "@/data/products";
 
 export function useProducts() {
-  const [data, setData] = useState<Product[]>(seed);
+  const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
@@ -16,7 +16,7 @@ export function useProducts() {
 }
 
 export function useProduct(slug: string) {
-  const [product, setProduct] = useState<Product | undefined>(() => seed.find((p) => p.slug === slug));
+  const [product, setProduct] = useState<Product | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;

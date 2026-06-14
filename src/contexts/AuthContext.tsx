@@ -22,12 +22,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const s = JSON.parse(raw);
       setUser(s.user);
       setToken(s.token);
-      // Best-effort revalidate via /auth/me — silently clears on 401.
+      // Best-effort revalidate via /auth/me — on failure keep the existing
+      // session so AdminDataContext doesn't get wiped by a transient error.
       fetchMe()
         .then((u) => setUser(u))
         .catch(() => {
-          setUser(null); setToken(null);
-          if (typeof window !== "undefined") localStorage.removeItem(KEY);
+          // Only clear if we get a definitive 401 (token truly invalid/expired)
+          // The error shape from axios has response.status
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const isUnauthorized = (e: unknown) => (e as any)?.response?.status === 401;
+          return fetchMe().catch((e) => {
+            if (isUnauthorized(e)) {
+              setUser(null); setToken(null);
+              if (typeof window !== "undefined") localStorage.removeItem(KEY);
+            }
+            // Otherwise (network error, 5xx) — keep the session alive
+          });
         });
     } catch {}
   }, []);

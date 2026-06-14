@@ -94,6 +94,7 @@ function CheckoutPage() {
             return;
           }
 
+          console.log("Placing order with fields", fields, "and items", items);
           const validItems = items.filter((it) => isObjectId(it.product.id));
           if (validItems.length === 0) {
             toast.error("Your cart only has demo items. Add a product from the live catalog to place a real order.");

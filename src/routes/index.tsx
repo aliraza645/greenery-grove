@@ -23,7 +23,9 @@ function Home() {
   const { products } = useProducts();
   const featured = products.filter((p) => p.bestSeller).slice(0, 6);
   const list = (featured.length ? featured : products.slice(0, 6));
-  const editors = products.slice(6, 10);
+  // Show newest products not already in the featured list so new additions always appear
+  const listIds = new Set(list.map((p) => p.id));
+  const editors = products.filter((p) => !listIds.has(p.id)).slice(0, 4);
 
   return (
     <div>

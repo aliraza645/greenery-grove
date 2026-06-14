@@ -6,13 +6,21 @@ import { StatusBadge } from "./admin.index";
 
 export const Route = createFileRoute("/admin/orders")({ component: OrdersAdmin });
 
-const STATUSES: Order["status"][] = ["pending", "shipped", "delivered", "cancelled"];
+const STATUSES: Order["status"][] = ["pending", "paid", "shipped", "delivered", "cancelled"];
 
 function OrdersAdmin() {
-  const { orders, setOrderStatus } = useAdminData();
+  const { orders, setOrderStatus, loading } = useAdminData();
   const [filter, setFilter] = useState<"all" | Order["status"]>("all");
 
   const list = filter === "all" ? orders : orders.filter((o) => o.status === filter);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-sm text-ink/50">
+        Loading orders…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

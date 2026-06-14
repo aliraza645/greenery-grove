@@ -1,25 +1,22 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Lock } from "lucide-react";
+import { loginRequest } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
-const ADMIN_EMAIL = "admin@gmail.com";
-const ADMIN_PASSWORD = "admin123";
 const STORAGE_KEY = "eplant-admin-gate";
 
 export function AdminAuthGate({ children }: { children: ReactNode }) {
-  const [authed, setAuthed] = useState(false);
+  const { user, token, setSession, logout } = useAuth();
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1") {
-        setAuthed(true);
-      }
-    } catch {}
-    setReady(true);
-  }, []);
+  // Consider authed if AuthContext has an admin user with a token
+  const authed = !!(user?.role === "admin" && token);
+
+  useEffect(() => { setReady(true); }, []);
 
   if (!ready) return null;
 
@@ -30,7 +27,7 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
         <button
           onClick={() => {
             try { localStorage.removeItem(STORAGE_KEY); } catch {}
-            setAuthed(false);
+            logout();
           }}
           className="fixed bottom-4 right-4 z-[60] text-[10px] uppercase tracking-widest bg-white border border-ink/10 px-3 py-2 text-ink/60 hover:text-leaf shadow-sm"
         >
@@ -43,14 +40,23 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-mist px-6">
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (email.trim().toLowerCase() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+          setError(null);
+          setSubmitting(true);
+          try {
+            const { user: u, token: t } = await loginRequest(email.trim().toLowerCase(), password);
+            if (u.role !== "admin") {
+              setError("This account does not have admin access.");
+              return;
+            }
+            setSession(u, t);
             try { localStorage.setItem(STORAGE_KEY, "1"); } catch {}
-            setAuthed(true);
-            setError(null);
-          } else {
-            setError("Invalid admin credentials.");
+          } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } }; message?: string };
+            setError(e?.response?.data?.message ?? e?.message ?? "Login failed.");
+          } finally {
+            setSubmitting(false);
           }
         }}
         className="w-full max-w-md bg-white border border-leaf/10 p-10"
@@ -90,8 +96,10 @@ export function AdminAuthGate({ children }: { children: ReactNode }) {
 
         {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
 
-        <button className="w-full bg-leaf text-mist py-3 text-xs uppercase tracking-widest font-medium">
-          Enter admin
+        <button
+          disabled={submitting}
+          className="w-full bg-leaf text-mist py-3 text-xs uppercase tracking-widest font-medium disabled:opacity-60">
+          {submitting ? "Signing in…" : "Enter admin"}
         </button>
 
         <p className="mt-6 text-[11px] text-ink/50 leading-relaxed">

@@ -1,5 +1,5 @@
 import { api } from "./api";
-import { products as seed, type Product, type LightLevel, type PlantType } from "@/data/products";
+import type { Product, LightLevel, PlantType } from "@/data/products";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ServerProduct = any;
@@ -58,22 +58,14 @@ export function toServerProduct(p: Partial<Product>) {
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  try {
-    const { data } = await api.get("/products", { params: { limit: 100 } });
-    const items: ServerProduct[] = data?.items ?? data ?? [];
-    return items.length ? items.map(mapProduct) : seed;
-  } catch {
-    return seed;
-  }
+  const { data } = await api.get("/products", { params: { limit: 100 } });
+  const items: ServerProduct[] = data?.items ?? data ?? [];
+  return items.map(mapProduct);
 }
 
 export async function fetchProduct(slug: string): Promise<Product | undefined> {
-  try {
-    const { data } = await api.get(`/products/${slug}`);
-    return mapProduct(data);
-  } catch {
-    return seed.find((p) => p.slug === slug);
-  }
+  const { data } = await api.get(`/products/${slug}`);
+  return mapProduct(data);
 }
 
 export async function createProductApi(p: Partial<Product>): Promise<Product> {
