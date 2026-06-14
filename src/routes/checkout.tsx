@@ -20,7 +20,9 @@ function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [method, setMethod] = useState<"stripe" | "cod">("cod");
+  const method = "cod" as const;
+  const setMethod = (_: "cod") => {};
+  void setMethod;
   const [submitting, setSubmitting] = useState(false);
 
   const shipping = subtotal > 75 ? 0 : 8;
