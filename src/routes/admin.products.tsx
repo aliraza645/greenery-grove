@@ -25,9 +25,23 @@ function ProductsAdmin() {
     [p.name, p.latin, p.category].join(" ").toLowerCase().includes(query.toLowerCase())
   );
 
+  const validateDraft = (d: Draft): Record<string, string> => {
+    const e: Record<string, string> = {};
+    if (!d.name?.trim()) e.name = "Name is required.";
+    if (!d.slug?.trim()) e.slug = "Slug is required.";
+    if (!(d.price > 0)) e.price = "Price must be greater than 0.";
+    if (!d.category?.trim()) e.category = "Category is required.";
+    if (!d.description?.trim()) e.description = "Description is required.";
+    if (!d.images || d.images.length === 0) e.images = "Upload at least one image.";
+    return e;
+  };
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   const save = async () => {
     if (!editing) return;
-    if (!editing.name || !editing.slug) { toast.error("Name and slug are required"); return; }
+    const errs = validateDraft(editing);
+    setFieldErrors(errs);
+    if (Object.keys(errs).length) { toast.error("Please fix the highlighted fields."); return; }
     try {
       if (editing.id) {
         await updateProduct(editing.id, editing);
@@ -37,6 +51,7 @@ function ProductsAdmin() {
         toast.success("Product created");
       }
       setEditing(null);
+      setFieldErrors({});
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       toast.error((e as any)?.response?.data?.message ?? "Save failed — is the API running?");
